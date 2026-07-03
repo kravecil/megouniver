@@ -49,7 +49,9 @@ class Fetcher:
                     response.raise_for_status()
                     return await response.text()
             except (
-                ClientResponseError | ClientConnectorError | ConnectionTimeoutError
+                ClientResponseError,
+                ClientConnectorError,
+                ConnectionTimeoutError,
             ) as e:
                 logger.error(
                     "Failed attempt %d/%d: %s",
