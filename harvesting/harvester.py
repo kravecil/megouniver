@@ -1,11 +1,13 @@
+import asyncio
 import logging
+import re
 from typing import Self
 
 from bs4 import BeautifulSoup
 from yarl import URL
 
 from harvesting.fetcher import Fetcher
-from harvesting.speciality import Speciality
+from harvesting.speciality import Speciality, Student
 from harvesting.utils import get_page_id_from_url
 
 logger = logging.getLogger(__name__)
@@ -21,48 +23,68 @@ class Harvester:
         fetcher = Fetcher()
         return cls(fetcher=fetcher, page_id=page_id)
 
+    async def harvest(self):
+        if self.fetcher is None:
+            raise ValueError("Fetcher is not initialized")
+
+        async with self.fetcher:
+            specialities = await self.get_specialities_data()
+
+            sem = asyncio.Semaphore(5)
+
+            tasks = [
+                self._gather_students_data(speciality=speciality, sem=sem)
+                for speciality in specialities
+            ]
+
+            await asyncio.gather(*tasks)
+
+        return specialities
+
     async def get_specialities_data(self) -> list[Speciality]:
         if self.fetcher is None:
             raise ValueError("Fetcher is not initialized")
 
+        if self.fetcher.client is None:
+            raise ValueError("Client is not initialized")
+
         logger.info("Fetching specialities data")
         try:
-            async with self.fetcher:
-                html = await self.fetcher.fetch(
-                    self._get_specialities_body_url(self.page_id)
-                )
+            html = await self.fetcher.fetch(
+                self._get_specialities_body_url(self.page_id)
+            )
 
-                soup = BeautifulSoup(html, "lxml")
+            soup = BeautifulSoup(html, "lxml")
 
-                list_div = soup.find("div", id="list")
-                if not list_div:
-                    logger.warning("No #list div found")
-                    return []
+            list_div = soup.find("div", id="list")
+            if not list_div:
+                logger.warning("No #list div found")
+                return []
 
-                table = list_div.find("table", class_="table")
-                if not table:
-                    logger.warning("No .table found inside #list")
-                    return []
+            table = list_div.find("table", class_="table")
+            if not table:
+                logger.warning("No .table found inside #list")
+                return []
 
-                rows = table.find_all("tr")
-                rows_to_process = rows[2:]
+            rows = table.find_all("tr")
+            rows_to_process = rows[2:]
 
-                result = []
-                for row in rows_to_process:
-                    speciality = self._parse_table_row_cells(row)
-                    if speciality:
-                        result.append(speciality)
+            result = []
+            for row in rows_to_process:
+                speciality = self._parse_specialities_table_row_cells(row)
+                if speciality:
+                    result.append(speciality)
 
-                logger.info(f"Fetched {len(result)} specialities data")
+            logger.info(f"Fetched {len(result)} specialities data")
 
-                return result
+            return result
 
         except Exception as e:
             logger.error("Failed to fetch specialties data: %s", e)
             return []
 
     @staticmethod
-    def _parse_table_row_cells(row) -> Speciality | None:
+    def _parse_specialities_table_row_cells(row) -> Speciality | None:
         cells = row.find_all("td")
 
         if cells:
@@ -90,18 +112,68 @@ class Harvester:
 
             return speciality
 
+    async def _gather_students_data(
+        self, speciality: Speciality, sem: asyncio.Semaphore
+    ) -> list[Student] | None:
+        if self.fetcher is None:
+            raise ValueError("Fetcher is not initialized")
+
+        if self.fetcher.client is None:
+            raise ValueError("Client is not initialized")
+
+        logger.info(f"Fetching students data for {speciality.code} ({speciality.name})")
+
+        async with sem:
+            try:
+                url = self._get_students_body_url(speciality.page_id)
+
+                html = await self.fetcher.fetch(url)
+
+                soup = BeautifulSoup(html, "lxml")
+
+                max_places = self._get_max_places(soup)
+                if max_places is None:
+                    return None
+
+                speciality.max_places = max_places
+                logger.info(
+                    f"Max places for {speciality.code}: {speciality.max_places}"
+                )
+
+                # TODO: parse students data
+            except Exception as e:
+                logger.error(
+                    f"Failed to fetch students data for {speciality.code}: {e}"
+                )
+                return None
+
+    @staticmethod
+    def _get_max_places(soup: BeautifulSoup) -> int | None:
+        places_div = soup.find("div", class_="places-list")
+        if not places_div:
+            logger.warning("No .places-list found")
+            return None
+
+        text = places_div.text.strip()
+
+        match = re.search(r"\d+", text)
+        if match:
+            return int(match.group())
+
+        return None
+
     @staticmethod
     def _get_specialities_body_url(page_id: str) -> str:
-        BASE_URL = "https://lists.priem.etu.ru/public/page.html"
+        base_url = "https://lists.priem.etu.ru/public/page.html"
 
-        url = URL(BASE_URL).with_query(id=page_id)
+        url = URL(base_url).with_query(id=page_id)
 
         return str(url)
 
     @staticmethod
-    def _get_students_body_url(page_id: str, is_body_only: bool = True) -> str:
-        BASE_URL = "https://lists.priem.etu.ru/public/list.html"
+    def _get_students_body_url(page_id: str, is_body_only: bool = False) -> str:
+        base_url = "https://lists.priem.etu.ru/public/list.html"
 
-        url = URL(BASE_URL).with_query(id=page_id, body_only=is_body_only)
+        url = URL(base_url).with_query(id=page_id, body_only=str(is_body_only))
 
         return str(url)
