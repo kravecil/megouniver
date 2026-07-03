@@ -1,5 +1,6 @@
 .vscode
 __debug_scripts__
+specialities.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
