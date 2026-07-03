@@ -23,7 +23,7 @@ class Harvester:
         fetcher = Fetcher()
         return cls(fetcher=fetcher, page_id=page_id)
 
-    async def harvest(self):
+    async def harvest(self) -> list[Speciality]:
         if self.fetcher is None:
             raise ValueError("Fetcher is not initialized")
 
@@ -39,7 +39,9 @@ class Harvester:
 
             await asyncio.gather(*tasks)
 
-        return specialities
+        filtered_specialities = [s for s in specialities if s.students is not None]
+
+        return filtered_specialities
 
     async def get_specialities_data(self) -> list[Speciality]:
         if self.fetcher is None:
