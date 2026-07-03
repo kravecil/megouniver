@@ -1,0 +1,25 @@
+[project]
+name = "megouniver"
+version = "0.1.0"
+description = "Check your chances of going to university"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6.0",
+    "pyright>=1.1.411",
+    "ruff>=0.15.20",
+]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+exclude = [
+    "__debug_scripts__",
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    ".venv"
+]
