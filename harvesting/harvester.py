@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from yarl import URL
 
 from harvesting.fetcher import Fetcher
-from harvesting.speciality import Speciality, Student
+from harvesting.models import Speciality, Student
 from harvesting.utils import get_page_id_from_url
 
 logger = logging.getLogger(__name__)
@@ -126,9 +126,7 @@ class Harvester:
         async with sem:
             try:
                 url = self._get_students_body_url(speciality.page_id)
-
                 html = await self.fetcher.fetch(url)
-
                 soup = BeautifulSoup(html, "lxml")
 
                 max_places = self._get_max_places(soup)
@@ -140,7 +138,25 @@ class Harvester:
                     f"Max places for {speciality.code}: {speciality.max_places}"
                 )
 
-                # TODO: parse students data
+                tbody = soup.find("tbody", id="lists-tbody")
+                if not tbody:
+                    logger.warning("No .table found")
+                    return None
+
+                rows = tbody.find_all("tr")
+                result = []
+                for row in rows:
+                    student = self._parse_students_table_row_cells(row)
+                    if student:
+                        result.append(student)
+
+                if result:
+                    speciality.students = result
+                    logger.info(f"Fetched {len(result)} students data")
+                else:
+                    logger.warning(
+                        f"No students data found for {speciality.code} ({speciality.name})"
+                    )
             except Exception as e:
                 logger.error(
                     f"Failed to fetch students data for {speciality.code}: {e}"
@@ -161,6 +177,27 @@ class Harvester:
             return int(match.group())
 
         return None
+
+    @staticmethod
+    def _parse_students_table_row_cells(row) -> Student | None:
+        cells = row.find_all("td")
+
+        if not cells:
+            return None
+
+        number = int(cells[0].text.strip())
+        code = int(cells[1].text.strip())
+        priority = int(cells[2].text.strip())
+        score = int(cells[4].text.strip())
+        is_preferred = cells[11].text.strip().lower() == "да"
+
+        return Student(
+            number=number,
+            code=code,
+            priority=priority,
+            score=score,
+            is_preferred=is_preferred,
+        )
 
     @staticmethod
     def _get_specialities_body_url(page_id: str) -> str:

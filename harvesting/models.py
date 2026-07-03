@@ -3,7 +3,11 @@ from dataclasses import dataclass
 
 @dataclass
 class Student:
-    pass
+    number: int
+    code: int
+    priority: int
+    score: int
+    is_preferred: bool
 
 
 @dataclass
@@ -12,4 +16,4 @@ class Speciality:
     name: str
     page_id: str
     max_places: int | None = None
-    strudents: list[Student] | None = None
+    students: list[Student] | None = None
