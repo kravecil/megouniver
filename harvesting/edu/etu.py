@@ -7,20 +7,28 @@ from bs4 import BeautifulSoup
 from yarl import URL
 
 from harvesting.fetcher import Fetcher
+from harvesting.interfaces import IHarvestable
 from harvesting.models import Speciality, Student
 from harvesting.utils import get_page_id_from_url
 
 logger = logging.getLogger(__name__)
 
 
-class Harvester:
+class Harvester(IHarvestable):
+    BASE_URL: str = "https://abit.etu.ru/ru/postupayushhim/lists/page/#/?id=019ee529-454f-7e45-aced-7f2361797e11"
+
     def __init__(self, page_id: str, fetcher: Fetcher | None) -> None:
         self.fetcher = fetcher
         self.page_id = page_id
 
     @classmethod
-    async def create(cls, page_id: str) -> Self:
+    async def create(cls) -> Self:
         fetcher = Fetcher()
+
+        page_id = get_page_id_from_url(cls.BASE_URL)
+        if not page_id:
+            raise ValueError(f"Invalid URL: {cls.BASE_URL}")
+
         return cls(fetcher=fetcher, page_id=page_id)
 
     async def harvest(self) -> list[Speciality]:
@@ -28,7 +36,7 @@ class Harvester:
             raise ValueError("Fetcher is not initialized")
 
         async with self.fetcher:
-            specialities = await self.get_specialities_data()
+            specialities = await self._get_specialities_data()
 
             sem = asyncio.Semaphore(5)
 
@@ -43,7 +51,7 @@ class Harvester:
 
         return filtered_specialities
 
-    async def get_specialities_data(self) -> list[Speciality]:
+    async def _get_specialities_data(self) -> list[Speciality]:
         if self.fetcher is None:
             raise ValueError("Fetcher is not initialized")
 

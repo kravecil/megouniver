@@ -3,35 +3,39 @@ import logging
 import sys
 
 from analysing.analyser import Analyser
-from harvesting.harvester import Harvester
-from harvesting.utils import get_page_id_from_url, specialities_to_flat_df
+from config.edu_mapper import EDU_MAPPER
+from config.settings import STUDENT_CODE
+from harvesting.interfaces import IHarvestable
+from harvesting.utils import specialities_to_flat_df
 
-logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+logging.basicConfig(level=logging.WARNING, stream=sys.stdout)
+
 
 logger = logging.getLogger(__name__)
 
 
-URL = "https://abit.etu.ru/ru/postupayushhim/lists/page/#/?id=019ee529-454f-7e45-aced-7f2361797e11"
+async def harvest_and_analyse_data(
+    cls_harvester: type[IHarvestable],
+) -> tuple[str, str] | None:
+    etu_harvester = await cls_harvester.create()
+    etu_data = await etu_harvester.harvest()
 
-STUDENT_CODE = 1190524
+    etu_specialities_df = specialities_to_flat_df(etu_data)
+
+    etu_result = Analyser(etu_specialities_df, STUDENT_CODE).analyse()
+
+    return etu_result
 
 
 async def main():
-    page_id = get_page_id_from_url(URL)
+    tasks = []
 
-    if not page_id:
-        raise ValueError(f"Invalid URL: {URL}")
+    for k, v in EDU_MAPPER.items():
+        tasks.append(harvest_and_analyse_data(v))
 
-    harvester = await Harvester.create(page_id)
-    result = await harvester.harvest()
+    results = await asyncio.gather(*tasks)
 
-    df_specialities = specialities_to_flat_df(result)
-
-    analyser = Analyser(df_specialities, STUDENT_CODE)
-
-    result = analyser.analyse()
-
-    print(result)
+    print(results)
 
 
 if __name__ == "__main__":
