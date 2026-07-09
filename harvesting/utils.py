@@ -51,9 +51,13 @@ def specialities_to_flat_df(specialities: list[Speciality]) -> pd.DataFrame:
 def get_stats_text(df, student_code: int) -> str:
     rows = df[df["student_code"] == student_code].sort_values(by="student_priority")
 
-    text = """Статистика по коду студента {}\n\n"""
+    text = """Статистика по коду студента {} (баллы {})\n\n"""
+
+    student_score: int | None = None
 
     for _, row in rows.iterrows():
+        if student_score is None:
+            student_score = int(row["student_score"])
         text += "(Приоритет {}) {} (мест {}): {}/{}\n".format(
             row["student_priority"],
             row["speciality_name"],
@@ -62,4 +66,4 @@ def get_stats_text(df, student_code: int) -> str:
             row["speciality_total_students"],
         )
 
-    return text.format(student_code)
+    return text.format(student_code, student_score)
