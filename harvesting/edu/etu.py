@@ -36,22 +36,26 @@ class Harvester(IHarvestable):
             raise ValueError("Fetcher is not initialized")
 
         async with self.fetcher:
-            specialities = await self._get_specialities_data()
+            specialities_data = await self._get_specialities_data()
 
             sem = asyncio.Semaphore(5)
 
             tasks = [
-                self._gather_students_data(speciality=speciality, sem=sem)
-                for speciality in specialities
+                self._gather_students_data(
+                    page_id=page_id, speciality=speciality, sem=sem
+                )
+                for page_id, speciality in specialities_data.items()
             ]
 
             await asyncio.gather(*tasks)
 
-        filtered_specialities = [s for s in specialities if s.students is not None]
+        filtered_specialities = [
+            s for s in specialities_data.values() if s.students is not None
+        ]
 
         return filtered_specialities
 
-    async def _get_specialities_data(self) -> list[Speciality]:
+    async def _get_specialities_data(self) -> dict[str, Speciality]:
         if self.fetcher is None:
             raise ValueError("Fetcher is not initialized")
 
@@ -69,21 +73,25 @@ class Harvester(IHarvestable):
             list_div = soup.find("div", id="list")
             if not list_div:
                 logger.warning("No #list div found")
-                return []
+                return {}
 
             table = list_div.find("table", class_="table")
             if not table:
                 logger.warning("No .table found inside #list")
-                return []
+                return {}
 
             rows = table.find_all("tr")
             rows_to_process = rows[2:]
 
-            result = []
+            result = {}
             for row in rows_to_process:
-                speciality = self._parse_specialities_table_row_cells(row)
+                parsed = self._parse_specialities_table_row_cells(row)
+                if not parsed:
+                    continue
+
+                page_id, speciality = parsed
                 if speciality:
-                    result.append(speciality)
+                    result[page_id] = speciality
 
             logger.info(f"Fetched {len(result)} specialities data")
 
@@ -91,10 +99,10 @@ class Harvester(IHarvestable):
 
         except Exception as e:
             logger.error("Failed to fetch specialties data: %s", e)
-            return []
+            return {}
 
     @staticmethod
-    def _parse_specialities_table_row_cells(row) -> Speciality | None:
+    def _parse_specialities_table_row_cells(row) -> tuple[str, Speciality] | None:
         cells = row.find_all("td")
 
         if cells:
@@ -114,16 +122,12 @@ class Harvester(IHarvestable):
                 logger.info("No page_id found in href attribute: %s", a_tag["href"])
                 return None
 
-            speciality = Speciality(
-                code=code,
-                name=name,
-                page_id=page_id,
-            )
+            speciality = Speciality(name=f"{code} {name}")
 
-            return speciality
+            return page_id, speciality
 
     async def _gather_students_data(
-        self, speciality: Speciality, sem: asyncio.Semaphore
+        self, page_id: str, speciality: Speciality, sem: asyncio.Semaphore
     ) -> list[Student] | None:
         if self.fetcher is None:
             raise ValueError("Fetcher is not initialized")
@@ -131,11 +135,11 @@ class Harvester(IHarvestable):
         if self.fetcher.client is None:
             raise ValueError("Client is not initialized")
 
-        logger.info(f"Fetching students data for {speciality.code} ({speciality.name})")
+        logger.info(f"Fetching students data for {speciality.name})")
 
         async with sem:
             try:
-                url = self._get_students_body_url(speciality.page_id)
+                url = self._get_students_body_url(page_id)
                 html = await self.fetcher.fetch(url)
                 soup = BeautifulSoup(html, "lxml")
 
@@ -145,7 +149,7 @@ class Harvester(IHarvestable):
 
                 speciality.max_places = max_places
                 logger.info(
-                    f"Max places for {speciality.code}: {speciality.max_places}"
+                    f"Max places for {speciality.name}: {speciality.max_places}"
                 )
 
                 tbody = soup.find("tbody", id="lists-tbody")
@@ -164,12 +168,10 @@ class Harvester(IHarvestable):
                     speciality.students = result
                     logger.info(f"Fetched {len(result)} students data")
                 else:
-                    logger.warning(
-                        f"No students data found for {speciality.code} ({speciality.name})"
-                    )
+                    logger.warning(f"No students data found for {speciality.name})")
             except Exception as e:
                 logger.error(
-                    f"Failed to fetch students data for {speciality.code}: {e}"
+                    f"Failed to fetch students data for {speciality.name}: {e}"
                 )
                 return None
 

@@ -18,18 +18,14 @@ class Analyser:
 
         specialities_df = self.df[
             [
-                "speciality_code",
                 "speciality_name",
-                "speciality_page_id",
                 "speciality_max_places",
             ]
         ].drop_duplicates()
 
         specialities = {}
         for row in specialities_df.itertuples():
-            specialities[row.speciality_page_id] = {  # type: ignore[attr-defined]
-                "code": row.speciality_code,  # type: ignore[attr-defined]
-                "name": row.speciality_name,  # type: ignore[attr-defined]
+            specialities[row.speciality_name] = {  # type: ignore[attr-defined]
                 "max_places": row.speciality_max_places,  # type: ignore[attr-defined]
             }
 
@@ -39,19 +35,20 @@ class Analyser:
 
         excluded_students: set[int] = set()
         for row in sorted_df.itertuples(index=False):
-            speciality_page_id = row.speciality_page_id  # type: ignore[attr-defined]
-            max_places = specialities[speciality_page_id]["max_places"]
+            speciality_name = row.speciality_name  # type: ignore[attr-defined]
+            max_places = specialities[speciality_name]["max_places"]
             if max_places == 0:
                 continue
 
+            # TODO @me: check if sutdent_code not in student list at all
             student_code = int(row.student_code)  # type: ignore[arg-type]
             if student_code == self.student_code:
-                return (str(row.speciality_code), str(row.speciality_name))  # type: ignore[attr-defined]
+                return str(row.speciality_name)  # type: ignore[attr-defined]
 
             if student_code in excluded_students:
                 continue
 
-            specialities[speciality_page_id]["max_places"] = max_places - 1
+            specialities[speciality_name]["max_places"] = max_places - 1
             excluded_students.add(student_code)
 
         return None

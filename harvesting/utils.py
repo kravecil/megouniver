@@ -19,9 +19,7 @@ def specialities_to_flat_df(specialities: list[Speciality]) -> pd.DataFrame:
         if not spec.students:
             records.append(
                 {
-                    "speciality_code": spec.code,
                     "speciality_name": spec.name,
-                    "speciality_page_id": spec.page_id,
                     "speciality_max_places": spec.max_places,
                     "student_number": None,
                     "student_code": None,
@@ -35,9 +33,7 @@ def specialities_to_flat_df(specialities: list[Speciality]) -> pd.DataFrame:
         for student in spec.students:
             records.append(
                 {
-                    "speciality_code": spec.code,
                     "speciality_name": spec.name,
-                    "speciality_page_id": spec.page_id,
                     "speciality_max_places": spec.max_places,
                     "student_number": student.number,
                     "student_code": student.code,

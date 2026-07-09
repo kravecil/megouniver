@@ -12,8 +12,6 @@ class Student:
 
 @dataclass
 class Speciality:
-    code: str
     name: str
-    page_id: str
     max_places: int | None = None
     students: list[Student] | None = None

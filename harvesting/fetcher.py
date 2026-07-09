@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import random
-from typing import Self
+from typing import Any, Literal, Self
 
 from aiohttp import ClientSession, ClientTimeout, TCPConnector
 from aiohttp.client_exceptions import (
@@ -37,7 +37,16 @@ class Fetcher:
             await self.client.close()
             self.client = None
 
-    async def fetch(self, url: str) -> str:
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "get",
+        data_type: Literal["text", "json"] = "text",
+        headers: dict = {},
+        params: dict = {},
+        data: dict = {},
+    ) -> Any:
         if self.client is None:
             raise RuntimeError("Client is not initialized")
 
@@ -45,9 +54,11 @@ class Fetcher:
 
         for attempt in range(1, self.max_retries + 1):
             try:
-                async with self.client.get(url) as response:
+                async with getattr(self.client, method)(
+                    url, headers=headers, params=params, json=data
+                ) as response:
                     response.raise_for_status()
-                    return await response.text()
+                    return await getattr(response, data_type)()
             except (
                 ClientResponseError,
                 ClientConnectorError,
