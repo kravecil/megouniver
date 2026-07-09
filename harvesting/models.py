@@ -14,4 +14,5 @@ class Student:
 class Speciality:
     name: str
     max_places: int | None = None
+    total_students: int | None = None
     students: list[Student] | None = None

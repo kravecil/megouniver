@@ -166,6 +166,7 @@ class Harvester(IHarvestable):
 
                 if result:
                     speciality.students = result
+                    speciality.total_students = len(result)
                     logger.info(f"Fetched {len(result)} students data")
                 else:
                     logger.warning(f"No students data found for {speciality.name})")

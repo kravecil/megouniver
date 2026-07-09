@@ -94,7 +94,12 @@ class Harvester(IHarvestable):
                     self._get_max_places(code), self._get_students(code)
                 )
 
-            return Speciality(name=name, max_places=max_places, students=students)
+            return Speciality(
+                name=name,
+                max_places=max_places,
+                students=students,
+                total_students=len(students),
+            )
         except Exception as e:
             logger.error(f"Error parsing specialty {name}: %s", e)
             return None

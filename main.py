@@ -6,7 +6,7 @@ from analysing.analyser import Analyser
 from config.edu_mapper import EDU_MAPPER
 from config.settings import STUDENT_CODE
 from harvesting.interfaces import IHarvestable
-from harvesting.utils import specialities_to_flat_df
+from harvesting.utils import get_stats_text, specialities_to_flat_df
 
 logging.basicConfig(
     level=logging.WARNING,
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 async def harvest_and_analyse_data(
     cls_harvester: type[IHarvestable],
-) -> tuple[str, str] | None:
+) -> str:
     harvester = await cls_harvester.create()
     data = await harvester.harvest()
 
@@ -27,7 +27,12 @@ async def harvest_and_analyse_data(
 
     result = Analyser(specialities_df, STUDENT_CODE).analyse()
 
-    return result
+    if not result:
+        result = "никуда"
+
+    stats = get_stats_text(specialities_df, STUDENT_CODE)
+
+    return f"{stats}\n\nКуда проходит: {result}"
 
 
 async def main():
@@ -36,9 +41,9 @@ async def main():
     for k, v in EDU_MAPPER.items():
         tasks.append(harvest_and_analyse_data(v))
 
-    results = await asyncio.gather(*tasks)
+    results: list[str] = await asyncio.gather(*tasks)
 
-    print(results)
+    print("\n\n-----------------------------------\n\n".join(results))
 
 
 if __name__ == "__main__":

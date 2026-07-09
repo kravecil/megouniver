@@ -21,6 +21,7 @@ def specialities_to_flat_df(specialities: list[Speciality]) -> pd.DataFrame:
                 {
                     "speciality_name": spec.name,
                     "speciality_max_places": spec.max_places,
+                    "speciality_total_students": spec.total_students,
                     "student_number": None,
                     "student_code": None,
                     "student_priority": None,
@@ -35,6 +36,7 @@ def specialities_to_flat_df(specialities: list[Speciality]) -> pd.DataFrame:
                 {
                     "speciality_name": spec.name,
                     "speciality_max_places": spec.max_places,
+                    "speciality_total_students": spec.total_students,
                     "student_number": student.number,
                     "student_code": student.code,
                     "student_priority": student.priority,
@@ -44,3 +46,20 @@ def specialities_to_flat_df(specialities: list[Speciality]) -> pd.DataFrame:
             )
 
     return pd.DataFrame(records)
+
+
+def get_stats_text(df, student_code: int) -> str:
+    rows = df[df["student_code"] == student_code].sort_values(by="student_priority")
+
+    text = """Статистика по коду студента {}\n\n"""
+
+    for _, row in rows.iterrows():
+        text += "(Приоритет {}) {} (мест {}): {}/{}\n".format(
+            row["student_priority"],
+            row["speciality_name"],
+            row["speciality_max_places"],
+            row["student_number"],
+            row["speciality_total_students"],
+        )
+
+    return text.format(student_code)
