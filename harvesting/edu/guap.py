@@ -136,7 +136,7 @@ class Harvester(IHarvestable):
             priority = int(cells[2].text.strip())
 
             try:
-                score = int(cells[4].text.strip())
+                score = int(cells[3].text.strip())
             except ValueError:
                 score = 0
 
