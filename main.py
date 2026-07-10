@@ -16,9 +16,14 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+GREEN_CHECK = "\033[92m✅\033[0m"
+RED_CROSS = "\033[91m❌\033[0m"
+
+GREEN_INFO = "\033[92m💡\033[0m"
+
 
 async def harvest_and_analyse_data(
-    cls_harvester: type[IHarvestable],
+    university_name: str, cls_harvester: type[IHarvestable]
 ) -> str:
     harvester = await cls_harvester.create()
     data = await harvester.harvest()
@@ -28,18 +33,20 @@ async def harvest_and_analyse_data(
     result = Analyser(specialities_df, STUDENT_CODE).analyse()
 
     if not result:
-        result = "никуда"
+        result = f"{RED_CROSS} никуда"
+    else:
+        result = f"{GREEN_CHECK} {result}"
 
     stats = get_stats_text(specialities_df, STUDENT_CODE)
 
-    return f"{stats}\n\nКуда проходит: {result}"
+    return f"{GREEN_INFO} {university_name}\n\n{stats}\n\nКуда проходит: {result}"
 
 
 async def main():
     tasks = []
 
     for k, v in EDU_MAPPER.items():
-        tasks.append(harvest_and_analyse_data(v))
+        tasks.append(harvest_and_analyse_data(k, v))
 
     results: list[str] = await asyncio.gather(*tasks)
 
