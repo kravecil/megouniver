@@ -13,6 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 class Harvester(IHarvestable):
+    name = "ГУАП"
+
     BASE_URL = "https://priem.guap.ru"
     SPECIALITIES_URL = "https://priem.guap.ru/bach/lists/list_1_1_1_1"
 

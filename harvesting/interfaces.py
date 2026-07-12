@@ -4,6 +4,8 @@ from harvesting.models import Speciality
 
 
 class IHarvestable(Protocol):
+    name: str
+
     @classmethod
     async def create(cls) -> Self: ...
 

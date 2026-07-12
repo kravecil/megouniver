@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class Harvester(IHarvestable):
+    name = "ЛЭТИ"
+
     BASE_URL: str = "https://abit.etu.ru/ru/postupayushhim/lists/page/#/?id=019ee529-454f-7e45-aced-7f2361797e11"
 
     def __init__(self, page_id: str, fetcher: Fetcher | None) -> None:

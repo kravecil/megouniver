@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 class Harvester(IHarvestable):
+    name = "Политех"
+
     URL_CODE_LIST = "https://my.spbstu.ru/home/get-code-list"
     URL_DIRECTION_INFO = "https://my.spbstu.ru/home/get-direction-info"
     URL_ABIT_LIST = "https://my.spbstu.ru/home/get-abit-list"
