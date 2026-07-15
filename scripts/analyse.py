@@ -53,5 +53,4 @@ async def main():
     print("\n\n-----------------------------------\n\n".join(results))
 
 
-if __name__ == "__main__":
-    asyncio.run(main())
+asyncio.run(main())
