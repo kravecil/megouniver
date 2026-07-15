@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class Fetcher:
     def __init__(
-        self, timeout: float = 10.0, max_retries: int = 3, delay_sec: float = 1.0
+        self, timeout: float = 30.0, max_retries: int = 3, delay_sec: float = 1.0
     ) -> None:
         self.timeout = timeout
         self.max_retries = max_retries

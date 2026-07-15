@@ -3,8 +3,11 @@ import logging
 import sys
 
 from analysing.analyser import Analyser
-from config.edu_mapper import EDU_MAPPER
 from config.settings import STUDENT_CODE
+from harvesting.edu.etu import Harvester as EtuHarvester
+from harvesting.edu.guap import Harvester as GuapHarvester
+from harvesting.edu.kpfu import Harvester as KpfuHarvester
+from harvesting.edu.spbstu import Harvester as SpbStuHarvester
 from harvesting.interfaces import IHarvestable
 from harvesting.utils import get_stats_text, specialities_to_flat_df
 
@@ -12,6 +15,13 @@ logging.basicConfig(
     level=logging.WARNING,
     stream=sys.stdout,
 )
+
+EDU_LIST: list[type[IHarvestable]] = [
+    EtuHarvester,
+    GuapHarvester,
+    SpbStuHarvester,
+    KpfuHarvester,
+]
 
 
 logger = logging.getLogger(__name__)
@@ -22,9 +32,7 @@ RED_CROSS = "\033[91m❌\033[0m"
 GREEN_INFO = "\033[92m💡\033[0m"
 
 
-async def harvest_and_analyse_data(
-    university_name: str, cls_harvester: type[IHarvestable]
-) -> str:
+async def harvest_and_analyse_data(cls_harvester: type[IHarvestable]) -> str:
     harvester = await cls_harvester.create()
     data = await harvester.harvest()
 
@@ -39,14 +47,14 @@ async def harvest_and_analyse_data(
 
     stats = get_stats_text(specialities_df, STUDENT_CODE)
 
-    return f"{GREEN_INFO} {university_name}\n\n{stats}\n\nКуда проходит: {result}"
+    return f"{GREEN_INFO} {harvester.name}\n\n{stats}\n\nКуда проходит: {result}"
 
 
 async def main():
     tasks = []
 
-    for k, v in EDU_MAPPER.items():
-        tasks.append(harvest_and_analyse_data(k, v))
+    for e in EDU_LIST:
+        tasks.append(harvest_and_analyse_data(e))
 
     results: list[str] = await asyncio.gather(*tasks)
 

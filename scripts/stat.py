@@ -9,12 +9,18 @@ import asyncio
 
 from harvesting.edu.etu import Harvester as EtuHarvester
 from harvesting.edu.guap import Harvester as GuapHarvester
+from harvesting.edu.kpfu import Harvester as KpfuHarvester
 from harvesting.edu.spbstu import Harvester as SpbstuHarvester
 from harvesting.interfaces import IHarvestable
 
 SCORE_LIMIT = 263
 
-EDU_LIST: list[type[IHarvestable]] = [EtuHarvester, GuapHarvester, SpbstuHarvester]
+EDU_LIST: list[type[IHarvestable]] = [
+    EtuHarvester,
+    GuapHarvester,
+    SpbstuHarvester,
+    KpfuHarvester,
+]
 
 
 async def main():
