@@ -59,6 +59,9 @@ class Fetcher:
                 ) as response:
                     response.raise_for_status()
                     return await getattr(response, data_type)()
+            except asyncio.CancelledError, TimeoutError:
+                logger.warning("Fetching %s was cancelled", url)
+                raise
             except (
                 ClientResponseError,
                 ClientConnectorError,
