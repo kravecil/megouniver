@@ -1,0 +1,19 @@
+import asyncio
+
+from harvesting.edu.uust import Harvester
+from harvesting.utils import specialities_to_flat_df
+
+
+async def main():
+    harvester = await Harvester.create()
+
+    data = await harvester.harvest()
+
+    data_df = specialities_to_flat_df(data)
+
+    # result = Analyser(data_df, STUDENT_CODE).analyse()
+
+    pass
+
+
+asyncio.run(main())

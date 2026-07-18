@@ -6,8 +6,9 @@ class Student:
     number: int
     code: int
     priority: int
-    score: int
-    is_preferred: bool
+    score: int = 0
+    is_preferred: bool = False
+    has_agreement: bool = False
 
 
 @dataclass

@@ -8,6 +8,7 @@ from harvesting.edu.etu import Harvester as EtuHarvester
 from harvesting.edu.guap import Harvester as GuapHarvester
 from harvesting.edu.kpfu import Harvester as KpfuHarvester
 from harvesting.edu.spbstu import Harvester as SpbStuHarvester
+from harvesting.edu.uust import Harvester as UustHarvester
 from harvesting.interfaces import IHarvestable
 from harvesting.utils import get_stats_text, specialities_to_flat_df
 
@@ -21,6 +22,7 @@ EDU_LIST: list[type[IHarvestable]] = [
     GuapHarvester,
     SpbStuHarvester,
     KpfuHarvester,
+    UustHarvester,
 ]
 
 
