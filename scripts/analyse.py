@@ -53,12 +53,17 @@ async def harvest_and_analyse_data(cls_harvester: type[IHarvestable]) -> str:
 
 
 async def main():
-    tasks = []
+    # tasks = []
 
+    # for e in EDU_LIST:
+    #     tasks.append(harvest_and_analyse_data(e))
+
+    # results: list[str] = await asyncio.gather(*tasks)
+
+    results = []
     for e in EDU_LIST:
-        tasks.append(harvest_and_analyse_data(e))
-
-    results: list[str] = await asyncio.gather(*tasks)
+        result = await harvest_and_analyse_data(e)
+        results.append(result)
 
     print("\n\n-----------------------------------\n\n".join(results))
 
